@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+aiosqlite
+chromadb
+python-multipart
+httpx
+pydantic-settings
+alembic
+passlib[bcrypt]
+python-jose[cryptography]
+PyPDF2

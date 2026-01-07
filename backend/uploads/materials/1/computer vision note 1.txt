@@ -1,0 +1,81 @@
+1. Overview of Deep Learning for Vision
+Deep learning refers to multi‑layer neural networks capable of automatically learning hierarchical representations. 
+In classical vision, features such as edges and corners were manually engineered. Deep learning learns these features directly from raw pixels.
+Key advantages:
+• Learns complex patterns automatically
+• Scales well with large datasets
+• Achieves state‑of‑the‑art accuracy in many tasks
+2. Deep Neural Networks (DNN) Fundamentals
+A Deep Neural Network consists of stacked fully connected layers.
+
+Mathematically, a neuron output is:
+    z = wᵀx + b
+    a = σ(z)
+
+where:
+• x = input vector
+• w = weights
+• b = bias
+• σ = activation (ReLU, Sigmoid, Tanh)
+
+Training minimizes a loss function L using backpropagation:
+
+    w := w − η * ∂L/∂w
+
+where η is learning rate.
+
+Common losses:
+• Cross‑entropy (classification)
+• Mean Squared Error (regression)
+3. Convolutional Neural Networks (CNNs)
+CNNs exploit spatial locality. Instead of connecting every pixel to every neuron, they slide filters across images.
+
+Convolution operation:
+    F(i,j) = Σ Σ I(i+m, j+n) * K(m,n)
+
+where:
+• I = input image
+• K = convolution kernel
+• F = feature map
+
+Concepts:
+• Padding — preserves spatial size
+• Stride — how far filter moves
+• ReLU — introduces non‑linearity
+• Pooling — reduces dimensions
+4. CNN Layer Types
+1) Convolution Layer — extracts patterns
+2) Activation Layer — usually ReLU: max(0, x)
+3) Pooling Layer — max/average pooling
+4) Fully Connected Layer — combines features
+5) Softmax — converts logits to probabilities
+5. CNN Workflow (Diagram Description)
+[Diagram idea]
+Input Image → Conv + ReLU → Pooling → Deeper Convs → Flatten → Fully Connected → Output
+
+Students can draw arrows showing progressive feature abstraction:
+edges → textures → shapes → objects
+6. Popular CNN Architectures
+LeNet — first CNN for digit recognition
+AlexNet — introduced ReLU, GPU training
+VGG — deeper networks with small filters
+ResNet — skip connections solve vanishing gradients
+EfficientNet — scales width/depth/resolution efficiently
+7. CNN Training — Pseudocode
+Initialize network weights
+repeat for each epoch:
+    shuffle training set
+    for each batch:
+        forward pass
+        compute loss
+        backward pass (backpropagation)
+        update weights (optimizer)
+until convergence
+8. CNN Training Tricks (Very Important)
+• Normalize inputs
+• Data augmentation (flip/rotate/crop)
+• Dropout to prevent overfitting
+• Batch normalization for stable learning
+• Early stopping
+• Learning‑rate scheduling
+• Transfer learning when data is limited

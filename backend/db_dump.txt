@@ -1,0 +1,16 @@
+Checking progress for User: 1 (cshemanthcs@gmail.com)
+Found 2 progress records:
+Video ID: 2
+  Watched: 0.0
+  Max: 0.0
+  Total: 18.066633
+  Completed: False
+  Ratio: 0.0000
+--------------------
+Video ID: 2
+  Watched: 0.0
+  Max: 0.0
+  Total: 0.0
+  Completed: False
+  Ratio: N/A (Total is 0)
+--------------------
