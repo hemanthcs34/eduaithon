@@ -5,7 +5,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 // Configuration
 const DISTRACTION_THRESHOLD_MS = 10000; // 10 seconds
 const DETECTION_INTERVAL_MS = 500; // Check every 500ms
-const TREND_WINDOW_MS = 300000; // 5 minutes
+const TREND_WINDOW_MS = 3600000; // 60 minutes (Session based)
 const BREAK_SUGGESTION_THRESHOLD = 3; // Trigger after 3 distraction events
 
 interface AttentionState {
@@ -16,6 +16,7 @@ interface AttentionState {
     shouldSuggestBreak: boolean;
     totalFocusedTime: number;
     totalDistractedTime: number;
+    detectionScore: number;
 }
 
 interface UseAttentionTrackerReturn extends AttentionState {
@@ -34,6 +35,7 @@ export function useAttentionTracker(): UseAttentionTrackerReturn {
         shouldSuggestBreak: false,
         totalFocusedTime: 0,
         totalDistractedTime: 0,
+        detectionScore: 0,
     });
 
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -44,6 +46,7 @@ export function useAttentionTracker(): UseAttentionTrackerReturn {
     const distractionStartRef = useRef<number | null>(null);
     const lastDetectionRef = useRef<number>(Date.now());
     const eventTimestampsRef = useRef<number[]>([]);
+    const eventTriggeredRef = useRef<boolean>(false);
 
     // Initialize MediaPipe Face Detector
     const initializeDetector = useCallback(async () => {
@@ -60,7 +63,7 @@ export function useAttentionTracker(): UseAttentionTrackerReturn {
                     delegate: "GPU"
                 },
                 runningMode: "IMAGE",
-                minDetectionConfidence: 0.5
+                minDetectionConfidence: 0.85
             });
 
             detectorRef.current = detector;
@@ -120,18 +123,37 @@ export function useAttentionTracker(): UseAttentionTrackerReturn {
 
                 try {
                     const results = detectorRef.current.detect(canvasRef.current);
-                    const faceDetected = results.detections && results.detections.length > 0;
+
+                    // Filter: Require > 0.85 confidence to handle profile views
+                    const rawFace = results.detections && results.detections.length > 0;
+                    const rawScore = rawFace ? results.detections[0].categories[0].score : 0;
+                    const faceDetected = rawFace && rawScore > 0.85;
                     const now = Date.now();
 
+                    // Debug log (throttled)
+                    if (now % 2000 < DETECTION_INTERVAL_MS * 1.5) {
+                        console.log(`[FocusMode] Face: ${faceDetected} (Raw: ${rawScore?.toFixed(2)}) | Distraction: ${state.currentDistractionDuration}`);
+                    }
+
                     setState(prev => {
-                        let newState = { ...prev, isFaceDetected: faceDetected };
+                        let newState = {
+                            ...prev,
+                            isFaceDetected: faceDetected,
+                            detectionScore: rawScore
+                        };
 
                         if (faceDetected) {
-                            // Face is present - reset distraction timer
+                            // Face is present
+                            // Require 1 second of continuous focus to reset distraction fully (debouncing)
                             if (distractionStartRef.current !== null) {
+                                // We were distracted. Check if this is just a flicker?
+                                // For now, simple reset but maybe we strictly enforce "isFaceDetected" state changes?
                                 const distractionDuration = now - distractionStartRef.current;
                                 newState.totalDistractedTime += distractionDuration;
                                 distractionStartRef.current = null;
+
+                                // Reset event trigger flag for the next distraction
+                                eventTriggeredRef.current = false;
                             }
                             newState.currentDistractionDuration = 0;
                             newState.totalFocusedTime += DETECTION_INTERVAL_MS;
@@ -145,10 +167,12 @@ export function useAttentionTracker(): UseAttentionTrackerReturn {
                             newState.currentDistractionDuration = duration;
 
                             // Check if threshold crossed (new distraction event)
-                            if (duration >= DISTRACTION_THRESHOLD_MS &&
-                                now - lastDetectionRef.current > DISTRACTION_THRESHOLD_MS) {
+                            // LOGIC CHANGE: Only trigger ONCE per continuous distraction session
+                            if (duration >= DISTRACTION_THRESHOLD_MS && !eventTriggeredRef.current) {
+
+                                console.log("[FocusMode] Distraction Event Triggered!");
                                 newState.distractionEvents++;
-                                lastDetectionRef.current = now;
+                                eventTriggeredRef.current = true; // Mark this session as having triggered an event
                                 eventTimestampsRef.current.push(now);
 
                                 // Clean old events outside trend window
@@ -178,14 +202,11 @@ export function useAttentionTracker(): UseAttentionTrackerReturn {
 
     // Stop tracking
     const stopTracking = useCallback(() => {
+        console.log("[FocusMode] Stopping tracking...");
+
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
-        }
-
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
         }
 
         if (detectorRef.current) {
@@ -193,7 +214,19 @@ export function useAttentionTracker(): UseAttentionTrackerReturn {
             detectorRef.current = null;
         }
 
-        videoRef.current = null;
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => {
+                track.stop();
+                console.log("[FocusMode] Camera track stopped:", track.label);
+            });
+            streamRef.current = null;
+        }
+
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+            videoRef.current = null;
+        }
+
         canvasRef.current = null;
         distractionStartRef.current = null;
 

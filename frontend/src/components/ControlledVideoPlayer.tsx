@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
+import AttentionMonitor from '@/components/AttentionMonitor';
 
 interface ControlledVideoPlayerProps {
     videoId: number;
@@ -170,6 +171,13 @@ export default function ControlledVideoPlayer({
                 onPlay={handlePlay}
                 onPause={handlePause}
                 onEnded={handleEnded}
+            />
+
+            {/* Attention Monitor Overlay (Optional Focus Mode) */}
+            <AttentionMonitor
+                isVideoPlaying={isPlaying}
+                onPauseVideo={() => videoRef.current?.pause()}
+                onResumeVideo={() => videoRef.current?.play()}
             />
 
             {/* Custom progress overlay showing max watched position */}
