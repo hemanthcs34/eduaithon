@@ -10,6 +10,10 @@ from .evidence import (
     TimelineEntry, ConceptClarityTrend, ObservationAccuracyTrend,
     FocusDistractionTrend, DoubtResolutionFlow
 )
+from .exam_schedule import (
+    TopicInput, ExamScheduleCreate, ScheduleResponse,
+    StudyTask, DaySchedule, ExamScheduleResponse
+)
 
 # Alias for convenience
 Enrollment = EnrollmentInDB

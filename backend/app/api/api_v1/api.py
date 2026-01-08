@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 api_router = APIRouter()
 
-from .endpoints import auth, users, courses, videos, materials, chat, quiz, diagram, vision, doubts, let
+from .endpoints import auth, users, courses, videos, materials, chat, quiz, diagram, vision, doubts, let, exam_scheduler
 
 api_router.include_router(auth.router, tags=["login"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
@@ -15,3 +15,4 @@ api_router.include_router(diagram.router, prefix="/diagram", tags=["diagram-tuto
 api_router.include_router(vision.router, prefix="/vision", tags=["vision-lab"])
 api_router.include_router(doubts.router, prefix="/doubts", tags=["doubts"])
 api_router.include_router(let.router, prefix="/let", tags=["learning-evidence"])
+api_router.include_router(exam_scheduler.router, prefix="/exam-scheduler", tags=["exam-scheduler"])
