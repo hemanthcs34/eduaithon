@@ -7,6 +7,7 @@ class VideoBase(BaseModel):
     description: Optional[str] = None  # Topic description for AI quiz generation
     order_index: int
     url: Optional[str] = None
+    primary_video_id: Optional[int] = None
 
 class VideoCreate(VideoBase):
     pass
@@ -14,7 +15,8 @@ class VideoCreate(VideoBase):
 class Video(VideoBase):
     id: int
     course_id: int
-    
+    is_alternate: bool = False # Computed logic usually, or just check primary_video_id
+
     class Config:
         from_attributes = True
 

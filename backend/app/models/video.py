@@ -13,4 +13,6 @@ class Video(Base):
     order_index = Column(Integer) # For ordering videos in a course
 
     course = relationship("app.models.course.Course", back_populates="videos")
+    primary_video = relationship("Video", remote_side=[id], backref="alternates")
+    primary_video_id = Column(Integer, ForeignKey("videos.id"), nullable=True)
 

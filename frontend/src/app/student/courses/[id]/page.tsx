@@ -28,6 +28,7 @@ interface Video {
     title: string;
     order_index: number;
     url: string;
+    primary_video_id?: number;
 }
 
 interface Course {
@@ -169,6 +170,7 @@ export default function CoursePlayerPage() {
                             src={`http://localhost:8001/api/v1/videos/${activeVideo.id}/stream`}
                             onProgressUpdate={handleProgressUpdate}
                             className="w-full"
+                            isMandatory={!activeVideo.primary_video_id}
                         />
                         <div>
                             <h1 className="text-2xl font-bold text-white">{activeVideo.title}</h1>
@@ -202,64 +204,120 @@ export default function CoursePlayerPage() {
 
             <div className="lg:col-span-1 flex flex-col gap-4 overflow-y-auto">
                 <h3 className="font-bold text-white px-2">Course Content</h3>
-                {course.videos?.sort((a, b) => a.order_index - b.order_index).map((video: Video, idx: number) => {
-                    const videoProgress = progress.find(p => p.video_id === video.id);
-                    const canAccess = videoProgress?.can_access ?? (idx === 0);
-                    const isCompleted = videoProgress?.completed ?? false;
-                    const progressPercent = getProgressPercent(video.id);
-                    const quizRequired = videoProgress?.quiz_required;
+                {course.videos
+                    ?.filter((v: Video) => !v.primary_video_id) // Filter for Primary Videos
+                    .sort((a, b) => a.order_index - b.order_index)
+                    .map((video: Video, idx: number) => {
+                        const videoProgress = progress.find(p => p.video_id === video.id);
+                        const canAccess = videoProgress?.can_access ?? (idx === 0);
+                        const isCompleted = videoProgress?.completed ?? false;
+                        const progressPercent = getProgressPercent(video.id);
+                        const quizRequired = videoProgress?.quiz_required;
 
-                    return (
-                        <GlassCard
-                            key={video.id}
-                            className={cn(
-                                "group transition-all p-4 border border-transparent relative overflow-hidden",
-                                activeVideo?.id === video.id ? "border-primary/50 bg-primary/10" : "",
-                                canAccess ? "cursor-pointer hover:bg-white/10" : "opacity-50 cursor-not-allowed"
-                            )}
-                            onClick={() => handleVideoSelect(video)}
-                        >
-                            {/* Progress bar background */}
-                            <div
-                                className="absolute bottom-0 left-0 h-1 bg-green-500/50"
-                                style={{ width: `${progressPercent}%` }}
-                            />
+                        // Find Alternate Video
+                        const alternateVideo = course.videos.find(v => v.primary_video_id === video.id);
+                        const altProgress = alternateVideo ? progress.find(p => p.video_id === alternateVideo.id) : null;
+                        const altCanAccess = altProgress?.can_access ?? false;
+                        const altCompleted = altProgress?.completed ?? false;
 
-                            <div className="flex items-center gap-3">
-                                <div className={cn(
-                                    "h-8 w-8 rounded-full flex items-center justify-center transition-colors",
-                                    isCompleted ? "bg-green-500/20 text-green-400" :
-                                        !canAccess ? "bg-white/5 text-white/20" :
-                                            activeVideo?.id === video.id ? "bg-primary/20 text-primary" :
-                                                "bg-white/5 text-white/40 group-hover:text-primary"
-                                )}>
-                                    {isCompleted ? <CheckCircle size={16} /> :
-                                        !canAccess ? <Lock size={14} /> :
-                                            <PlayCircle size={16} />}
-                                </div>
-                                <div className="flex-1">
-                                    <p className={cn(
-                                        "text-sm font-medium",
-                                        activeVideo?.id === video.id ? "text-primary" :
-                                            isCompleted ? "text-green-400" :
-                                                !canAccess ? "text-white/40" : "text-white/80"
-                                    )}>
-                                        {video.title}
-                                    </p>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-xs text-white/40">Video {idx + 1}</p>
-                                        {progressPercent > 0 && progressPercent < 100 && (
-                                            <span className="text-xs text-primary">{progressPercent}%</span>
-                                        )}
-                                        {quizRequired && (
-                                            <span className="text-xs text-yellow-400">Quiz Required</span>
-                                        )}
+                        return (
+                            <div key={video.id} className="space-y-2">
+                                {/* Primary Video Card */}
+                                <GlassCard
+                                    className={cn(
+                                        "group transition-all p-4 border border-transparent relative overflow-hidden",
+                                        activeVideo?.id === video.id ? "border-primary/50 bg-primary/10" : "",
+                                        canAccess ? "cursor-pointer hover:bg-white/10" : "opacity-50 cursor-not-allowed"
+                                    )}
+                                    onClick={() => handleVideoSelect(video)}
+                                >
+                                    {/* Progress bar background */}
+                                    <div
+                                        className="absolute bottom-0 left-0 h-1 bg-green-500/50"
+                                        style={{ width: `${progressPercent}%` }}
+                                    />
+
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "h-8 w-8 rounded-full flex items-center justify-center transition-colors",
+                                            isCompleted ? "bg-green-500/20 text-green-400" :
+                                                !canAccess ? "bg-white/5 text-white/20" :
+                                                    activeVideo?.id === video.id ? "bg-primary/20 text-primary" :
+                                                        "bg-white/5 text-white/40 group-hover:text-primary"
+                                        )}>
+                                            {isCompleted ? <CheckCircle size={16} /> :
+                                                !canAccess ? <Lock size={14} /> :
+                                                    <PlayCircle size={16} />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className={cn(
+                                                "text-sm font-medium",
+                                                activeVideo?.id === video.id ? "text-primary" :
+                                                    isCompleted ? "text-green-400" :
+                                                        !canAccess ? "text-white/40" : "text-white/80"
+                                            )}>
+                                                {video.title}
+                                            </p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-xs text-white/40">Video {idx + 1}</p>
+                                                {progressPercent > 0 && progressPercent < 100 && (
+                                                    <span className="text-xs text-primary">{progressPercent}%</span>
+                                                )}
+                                                {quizRequired && (
+                                                    <span className="text-xs text-yellow-400">Quiz Required</span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                </GlassCard>
+
+                                {/* Alternate Video Card (Indented) */}
+                                {alternateVideo && (
+                                    <div className="pl-6 relative">
+                                        {/* Connection Line */}
+                                        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-white/10 -ml-2 rounded-full" />
+
+                                        <GlassCard
+                                            className={cn(
+                                                "group transition-all p-3 border border-dashed border-white/10 relative overflow-hidden",
+                                                activeVideo?.id === alternateVideo.id ? "border-blue-500/50 bg-blue-500/10" : "",
+                                                altCanAccess ? "cursor-pointer hover:bg-white/5" : "opacity-40 cursor-not-allowed"
+                                            )}
+                                            onClick={() => altCanAccess && handleVideoSelect(alternateVideo)}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn(
+                                                    "h-6 w-6 rounded-full flex items-center justify-center transition-colors",
+                                                    altCompleted ? "bg-green-500/20 text-green-400" :
+                                                        !altCanAccess ? "bg-white/5 text-white/20" :
+                                                            "bg-blue-500/20 text-blue-400"
+                                                )}>
+                                                    {altCompleted ? <CheckCircle size={12} /> :
+                                                        !altCanAccess ? <Lock size={12} /> :
+                                                            <PlayCircle size={12} />}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-0.5">
+                                                        <span className="text-[10px] uppercase tracking-wider bg-blue-500/20 text-blue-300 px-1.5 rounded">Optional</span>
+                                                    </div>
+                                                    <p className={cn(
+                                                        "text-sm font-medium",
+                                                        activeVideo?.id === alternateVideo.id ? "text-blue-400" :
+                                                            altCompleted ? "text-green-400" : "text-white/60"
+                                                    )}>
+                                                        Alternate: {alternateVideo.title}
+                                                    </p>
+                                                    {!altCanAccess && (
+                                                        <p className="text-[10px] text-white/30 italic">Complete primary video to unlock</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </GlassCard>
+                                    </div>
+                                )}
                             </div>
-                        </GlassCard>
-                    );
-                })}
+                        );
+                    })}
             </div>
 
             {/* Quiz Modal */}

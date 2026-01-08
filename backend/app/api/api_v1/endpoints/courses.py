@@ -135,14 +135,19 @@ async def upload_video(
     *,
     db: Session = Depends(deps.get_db),
     course_id: int,
-    title: str,
-    description: str = "",  # Topic description for AI quiz generation
-    order_index: int,
-    file: UploadFile = File(...),
+    title: Optional[str] = None,
+    description: Optional[str] = "",
+    order_index: Optional[int] = None,
+    primary_video_id: Optional[int] = None,
+    file: Optional[UploadFile] = File(None),
+    alternate_file: Optional[UploadFile] = File(None),
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:
     """
-    Upload a video to a course.
+    Upload video(s) to a course.
+    Supports:
+    1. New Primary Video (+ optional Alternate)
+    2. Fallback Alternate Video (for existing Primary)
     """
     if current_user.role != UserRole.TEACHER:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -156,14 +161,55 @@ async def upload_video(
 
     upload_dir = f"uploads/courses/{course_id}"
     os.makedirs(upload_dir, exist_ok=True)
+
+    # Scenerio 2: Fallback Alternate Upload (primary_video_id provided)
+    if primary_video_id:
+        if not alternate_file:
+             raise HTTPException(status_code=400, detail="alternate_file required when adding to existing primary video")
+        
+        # Verify primary exists
+        p_res = await db.execute(select(models.Video).where(models.Video.id == primary_video_id, models.Video.course_id == course_id))
+        primary_video = p_res.scalar_one_or_none()
+        if not primary_video:
+             raise HTTPException(status_code=404, detail="Primary video not found")
+        if primary_video.primary_video_id is not None:
+             raise HTTPException(status_code=400, detail="Cannot add alternate to an alternate video")
+
+        # Check if alternate already exists
+        alt_res = await db.execute(select(models.Video).where(models.Video.primary_video_id == primary_video_id))
+        if alt_res.scalar_one_or_none():
+             raise HTTPException(status_code=400, detail="Primary video already has an alternate")
+
+        # Create Alternate Video
+        alt_filename = f"ALT_{alternate_file.filename}"
+        alt_location = f"{upload_dir}/{alt_filename}"
+        with open(alt_location, "wb+") as buffer:
+             shutil.copyfileobj(alternate_file.file, buffer)
+        
+        alt_video = models.Video(
+            title=primary_video.title, # Inherit title
+            description=primary_video.description, # Inherit description
+            course_id=course_id,
+            order_index=primary_video.order_index,
+            url=alt_location,
+            primary_video_id=primary_video_id
+        )
+        db.add(alt_video)
+        await db.commit()
+        await db.refresh(alt_video)
+        return alt_video
+
+    # Scenario 1: New Primary Video (+ Optional Alternate)
+    if not file or not title or order_index is None:
+        raise HTTPException(status_code=400, detail="file, title, and order_index required for new video")
+
     file_location = f"{upload_dir}/{file.filename}"
-    
     with open(file_location, "wb+") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
     video = models.Video(
         title=title,
-        description=description,  # Store the description for AI quiz generation
+        description=description,
         course_id=course_id,
         order_index=order_index,
         url=file_location
@@ -171,6 +217,25 @@ async def upload_video(
     db.add(video)
     await db.commit()
     await db.refresh(video)
+
+    # Handle Simultaneous Alternate Upload
+    if alternate_file:
+        alt_filename = f"ALT_{alternate_file.filename}"
+        alt_location = f"{upload_dir}/{alt_filename}"
+        with open(alt_location, "wb+") as buffer:
+             shutil.copyfileobj(alternate_file.file, buffer)
+        
+        alt_video = models.Video(
+            title=title,
+            description=description,
+            course_id=course_id,
+            order_index=order_index,
+            url=alt_location,
+            primary_video_id=video.id
+        )
+        db.add(alt_video)
+        await db.commit()
+
     return video
 
 @router.delete("/{course_id}/videos/{video_id}")

@@ -118,19 +118,21 @@ async def get_course_progress(
 ) -> Any:
     """
     Get progress for all videos in a course.
-    Blocks access at videos 4, 7, 10, etc. until quiz is passed.
+    Handles Alternate Videos:
+    - Alternates are returned linked to their primary.
+    - Alternates are locked until Primary is completed.
     """
     # Get all videos in course
     videos_result = await db.execute(
         select(models.Video).where(models.Video.course_id == course_id).order_by(models.Video.order_index)
     )
-    videos = videos_result.scalars().all()
+    all_videos = videos_result.scalars().all()
     
     # Get progress for each video
     progress_result = await db.execute(
         select(models.VideoProgress).where(
             models.VideoProgress.user_id == current_user.id,
-            models.VideoProgress.video_id.in_([v.id for v in videos])
+            models.VideoProgress.video_id.in_([v.id for v in all_videos])
         )
     )
     progress_map = {p.video_id: p for p in progress_result.scalars().all()}
@@ -147,17 +149,54 @@ async def get_course_progress(
     )
     passed_checkpoints = set(row[0] for row in quiz_pass_result.fetchall())
     
+    # Separate Primary and Alternate videos
+    primary_videos = []
+    alternates_map = {} # primary_id -> [alternate_video]
+    
+    for v in all_videos:
+        if v.primary_video_id:
+            if v.primary_video_id not in alternates_map:
+                alternates_map[v.primary_video_id] = []
+            alternates_map[v.primary_video_id].append(v)
+        else:
+            primary_videos.append(v)
+            
+    # primary_videos should be already sorted by order_index
+    
     result = []
     completed_count = 0
     
-    for video in videos:
+    for i, video in enumerate(primary_videos):
+        # 1. Process Primary Video
         prog = progress_map.get(video.id)
         is_completed = prog.completed if prog else False
         
+        # Calculate Access for Primary (Existing Logic)
+        can_access = False
+        quiz_required = None
+        
+        if i == 0:
+            can_access = True
+        else:
+             # Check previous primary
+            prev_primary = primary_videos[i-1]
+            prev_prog = progress_map.get(prev_primary.id)
+            prev_completed = prev_prog.completed if prev_prog else False
+            
+            # Check quiz checkpoints (based on index, e.g. every 3 videos)
+            video_number = i + 1
+            checkpoint_before = ((video_number - 1) // 3) * 3
+            
+            if checkpoint_before > 0 and checkpoint_before not in passed_checkpoints:
+                can_access = False
+                quiz_required = checkpoint_before
+            else:
+                can_access = prev_completed
+
         if is_completed:
             completed_count += 1
-        
-        result.append({
+            
+        primary_data = {
             "video_id": video.id,
             "video_title": video.title,
             "order_index": video.order_index,
@@ -165,33 +204,40 @@ async def get_course_progress(
             "total_seconds": prog.total_seconds if prog else 0.0,
             "max_watched_seconds": prog.max_watched_seconds if prog else 0.0,
             "completed": is_completed,
-            "can_access": True
-        })
-    
-    # Enforce sequential access with quiz checkpoints
-    for i, item in enumerate(result):
-        video_number = i + 1  # 1-indexed
+            "can_access": can_access,
+            "quiz_required": quiz_required,
+            "is_alternate": False,
+            "is_mandatory": True # Primary is mandatory
+        }
+        result.append(primary_data)
         
-        if i == 0:
-            item["can_access"] = True
-        else:
-            # Check if previous video is completed
-            prev_completed = result[i-1]["completed"]
-            
-            # Check if we're at a quiz checkpoint boundary
-            # Video 4 requires quiz at checkpoint 3, video 7 requires quiz at checkpoint 6, etc.
-            checkpoint_before = ((video_number - 1) // 3) * 3
-            
-            if checkpoint_before > 0 and checkpoint_before not in passed_checkpoints:
-                item["can_access"] = False
-                item["quiz_required"] = checkpoint_before
-            else:
-                item["can_access"] = prev_completed
+        # 2. Process Linked Alternates (if any)
+        if video.id in alternates_map:
+            for alt in alternates_map[video.id]:
+                alt_prog = progress_map.get(alt.id)
+                alt_completed = alt_prog.completed if alt_prog else False
+                
+                # Logic: One alternate per primary, unlocked if primary completed
+                alt_can_access = is_completed # Unlock condition
+                
+                alt_data = {
+                    "video_id": alt.id,
+                    "video_title": f"Alternate Explanation: {video.title}", # Custom display title
+                    "order_index": video.order_index, # Same index visually
+                    "watched_seconds": alt_prog.watched_seconds if alt_prog else 0.0,
+                    "total_seconds": alt_prog.total_seconds if alt_prog else 0.0,
+                    "max_watched_seconds": alt_prog.max_watched_seconds if alt_prog else 0.0,
+                    "completed": alt_completed,
+                    "can_access": alt_can_access,
+                    "is_alternate": True,
+                    "is_mandatory": False, # Alternate is optional (no anti-skip)
+                    "primary_video_id": video.id
+                }
+                result.append(alt_data)
     
-    # Add quiz status
-    total_completed = sum(1 for r in result if r["completed"])
-    current_checkpoint = (total_completed // 3) * 3
-    needs_quiz = current_checkpoint > 0 and current_checkpoint not in passed_checkpoints and total_completed > 0 and total_completed % 3 == 0
+    # Add quiz status logic (unchanged essentially, just using primary count)
+    current_checkpoint = (completed_count // 3) * 3
+    needs_quiz = current_checkpoint > 0 and current_checkpoint not in passed_checkpoints and completed_count > 0 and completed_count % 3 == 0
     
     return {
         "videos": result,

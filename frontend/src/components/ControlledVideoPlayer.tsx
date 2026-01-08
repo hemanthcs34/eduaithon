@@ -8,13 +8,15 @@ interface ControlledVideoPlayerProps {
     src: string;
     onProgressUpdate?: (progress: { completed: boolean; watchedSeconds: number }) => void;
     className?: string;
+    isMandatory?: boolean; // Defaults to true
 }
 
 export default function ControlledVideoPlayer({
     videoId,
     src,
     onProgressUpdate,
-    className = ""
+    className = "",
+    isMandatory = true
 }: ControlledVideoPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [maxWatched, setMaxWatched] = useState(0);
@@ -90,8 +92,10 @@ export default function ControlledVideoPlayer({
         };
     }, [isPlaying, saveProgress]);
 
-    // Handle seeking - prevent seeking past max watched
+    // Handle seeking - prevent seeking past max watched if mandatory
     const handleSeeking = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+        if (!isMandatory) return; // Allow free seeking for non-mandatory videos
+
         const video = e.currentTarget;
         // Allow seeking backward freely, but not forward past max watched + small buffer
         const allowedMax = maxWatched + 2; // 2 second buffer for smooth playback

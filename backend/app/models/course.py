@@ -23,6 +23,8 @@ class Course(Base):
     videos = relationship("Video", back_populates="course")
     materials = relationship("CourseMaterial", back_populates="course")
 
+
+
 class Enrollment(Base):
     __tablename__ = "enrollments"
 
