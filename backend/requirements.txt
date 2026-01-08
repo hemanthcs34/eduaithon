@@ -10,3 +10,4 @@ alembic
 passlib[bcrypt]
 python-jose[cryptography]
 PyPDF2
+pillow

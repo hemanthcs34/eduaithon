@@ -7,7 +7,7 @@ import ControlledVideoPlayer from '@/components/ControlledVideoPlayer';
 import AIChatbot from '@/components/AIChatbot';
 import QuizModal from '@/components/QuizModal';
 import { GlassCard, GlassButton } from '@/components/ui/glass';
-import { CheckCircle, Lock, PlayCircle, Loader2, Award, Brain } from 'lucide-react';
+import { CheckCircle, Lock, PlayCircle, Loader2, Award, Brain, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -193,6 +193,21 @@ export default function CoursePlayerPage() {
                             <div>
                                 <p className="text-white font-bold">Diagram Intelligence Tutor</p>
                                 <p className="text-white/60 text-sm">Upload CNN diagrams for AI analysis</p>
+                            </div>
+                        </div>
+                    </GlassCard>
+                </Link>
+
+                {/* Visual Exploration Lab Link */}
+                <Link href="/student/vision-lab">
+                    <GlassCard className="p-4 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/20 hover:border-cyan-500/40 transition-all cursor-pointer group">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Eye className="text-cyan-400" size={20} />
+                            </div>
+                            <div>
+                                <p className="text-white font-bold">Visual Exploration Lab</p>
+                                <p className="text-white/60 text-sm">See how CNNs process images layer by layer</p>
                             </div>
                         </div>
                     </GlassCard>
