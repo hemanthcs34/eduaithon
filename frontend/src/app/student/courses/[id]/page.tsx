@@ -7,7 +7,8 @@ import ControlledVideoPlayer from '@/components/ControlledVideoPlayer';
 import AIChatbot from '@/components/AIChatbot';
 import QuizModal from '@/components/QuizModal';
 import { GlassCard, GlassButton } from '@/components/ui/glass';
-import { CheckCircle, Lock, PlayCircle, Loader2, Award } from 'lucide-react';
+import { CheckCircle, Lock, PlayCircle, Loader2, Award, Brain } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 interface VideoProgress {
@@ -179,6 +180,21 @@ export default function CoursePlayerPage() {
                         <p className="text-white/50">No video selected</p>
                     </div>
                 )}
+
+                {/* Diagram Intelligence Tutor Link */}
+                <Link href={`/student/courses/${id}/diagram-tutor`}>
+                    <GlassCard className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20 hover:border-purple-500/40 transition-all cursor-pointer group">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Brain className="text-purple-400" size={20} />
+                            </div>
+                            <div>
+                                <p className="text-white font-bold">Diagram Intelligence Tutor</p>
+                                <p className="text-white/60 text-sm">Upload CNN diagrams for AI analysis</p>
+                            </div>
+                        </div>
+                    </GlassCard>
+                </Link>
 
                 {/* AI Tutor Chatbot */}
                 <AIChatbot courseId={Number(id)} className="flex-1 min-h-[300px] border-accent/20" />

@@ -3,8 +3,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import api from '@/lib/api';
 import { GlassCard, GlassInput, GlassButton } from '@/components/ui/glass';
-import { Upload, PlayCircle, Loader2, X, FileText, Trash2 } from 'lucide-react';
+import { Upload, PlayCircle, Loader2, X, FileText, Trash2, Brain } from 'lucide-react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 
 interface Video {
     id: number;
@@ -160,6 +161,12 @@ export default function CourseDetailPage() {
                     <h1 className="text-3xl font-bold text-white">{course?.title || 'Course Manager'}</h1>
                     <p className="text-white/50 mt-1">{course?.description}</p>
                 </div>
+                <Link href={`/teacher/courses/${id}/diagram-submissions`}>
+                    <GlassButton className="flex items-center gap-2 bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30">
+                        <Brain size={18} className="text-purple-400" />
+                        <span className="text-purple-400">View Diagram Submissions</span>
+                    </GlassButton>
+                </Link>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
