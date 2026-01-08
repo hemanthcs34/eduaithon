@@ -7,6 +7,12 @@ class UserRole(str, enum.Enum):
     TEACHER = "teacher"
     STUDENT = "student"
 
+class AcademicYear(str, enum.Enum):
+    FIRST = "1st"
+    SECOND = "2nd"
+    THIRD = "3rd"
+    FOURTH = "4th"
+
 class User(Base):
     __tablename__ = "users"
 
@@ -16,6 +22,11 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), default=UserRole.STUDENT)
     is_active = Column(Boolean(), default=True)
+    
+    # Academic Identity (Students only)
+    usn = Column(String, nullable=True, index=True)  # University Seat Number
+    academic_year = Column(Enum(AcademicYear), nullable=True)
+    branch = Column(String, nullable=True)  # CSE, AIML, ECE, etc.
 
     # Relationships
     courses_teaching = relationship("Course", back_populates="teacher")

@@ -17,6 +17,11 @@ export default function LoginPage() {
 
     const [role, setRole] = useState<'student' | 'teacher'>('student');
 
+    // Academic fields for student registration
+    const [usn, setUsn] = useState('');
+    const [academicYear, setAcademicYear] = useState<'1st' | '2nd' | '3rd' | '4th'>('1st');
+    const [branch, setBranch] = useState('');
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -25,12 +30,26 @@ export default function LoginPage() {
         try {
             if (!isLogin) {
                 // Sign Up - POST JSON to create user
-                await api.post('/users/', {
+                const userData: any = {
                     email,
                     password,
                     full_name: email.split('@')[0],
                     role
-                });
+                };
+
+                // Add academic fields ONLY for students
+                if (role === 'student') {
+                    if (!usn.trim() || !branch.trim()) {
+                        setError('USN and Branch are required for student registration');
+                        setLoading(false);
+                        return;
+                    }
+                    userData.usn = usn;
+                    userData.academic_year = academicYear;
+                    userData.branch = branch;
+                }
+
+                await api.post('/users/', userData);
             }
 
             // Login - Always login after signup or direct login
@@ -110,22 +129,57 @@ export default function LoginPage() {
                         </div>
 
                         {!isLogin && (
-                            <div className="flex gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setRole('student')}
-                                    className={`flex-1 py-2 rounded-xl border transition-all ${role === 'student' ? 'bg-primary border-primary text-white' : 'border-white/10 text-white/40 hover:bg-white/5'}`}
-                                >
-                                    Student
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setRole('teacher')}
-                                    className={`flex-1 py-2 rounded-xl border transition-all ${role === 'teacher' ? 'bg-secondary border-secondary text-white' : 'border-white/10 text-white/40 hover:bg-white/5'}`}
-                                >
-                                    Teacher
-                                </button>
-                            </div>
+                            <>
+                                <div className="flex gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole('student')}
+                                        className={`flex-1 py-2 rounded-xl border transition-all ${role === 'student' ? 'bg-primary border-primary text-white' : 'border-white/10 text-white/40 hover:bg-white/5'}`}
+                                    >
+                                        Student
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setRole('teacher')}
+                                        className={`flex-1 py-2 rounded-xl border transition-all ${role === 'teacher' ? 'bg-secondary border-secondary text-white' : 'border-white/10 text-white/40 hover:bg-white/5'}`}
+                                    >
+                                        Teacher
+                                    </button>
+                                </div>
+
+                                {/* Academic Fields - STUDENTS ONLY */}
+                                {role === 'student' && (
+                                    <>
+                                        <GlassInput
+                                            placeholder="USN (e.g., 1MS21CS001)"
+                                            type="text"
+                                            value={usn}
+                                            onChange={(e) => setUsn(e.target.value)}
+                                            required
+                                        />
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <select
+                                                value={academicYear}
+                                                onChange={(e) => setAcademicYear(e.target.value as any)}
+                                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary transition-all backdrop-blur-xl"
+                                                required
+                                            >
+                                                <option value="1st">1st Year</option>
+                                                <option value="2nd">2nd Year</option>
+                                                <option value="3rd">3rd Year</option>
+                                                <option value="4th">4th Year</option>
+                                            </select>
+                                            <GlassInput
+                                                placeholder="Branch (e.g., CSE)"
+                                                type="text"
+                                                value={branch}
+                                                onChange={(e) => setBranch(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    </>
+                                )}
+                            </>
                         )}
 
                         <GlassButton type="submit" disabled={loading} className="w-full">

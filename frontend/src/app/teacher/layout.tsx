@@ -4,7 +4,7 @@ import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { GlassButton } from '@/components/ui/glass';
-import { LogOut, BookOpen, Users, LayoutDashboard, MessageCircleQuestion } from 'lucide-react';
+import { LogOut, BookOpen, Users, LayoutDashboard, MessageCircleQuestion, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     const navItems = [
         { href: '/teacher/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/teacher/courses', label: 'My Courses', icon: BookOpen },
+        { href: '/teacher/let', label: 'Learning Evidence', icon: TrendingUp },
         { href: '/teacher/doubts', label: 'Student Doubts', icon: MessageCircleQuestion },
     ];
 

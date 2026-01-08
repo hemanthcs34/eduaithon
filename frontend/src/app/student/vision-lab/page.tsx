@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, ChevronRight, CheckCircle, XCircle, Sparkles, Eye, Layers, Grid3X3, Brain } from "lucide-react";
 import api from "@/lib/api";
+import { letService } from "@/services/let";
 
 // Types
 interface MCQOption {
@@ -53,6 +54,8 @@ export default function VisionLabPage() {
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [showExplanation, setShowExplanation] = useState(false);
     const [completedStages, setCompletedStages] = useState<Set<number>>(new Set());
+    const [correctAnswers, setCorrectAnswers] = useState(0);
+    const [totalQuestions, setTotalQuestions] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleUpload = async (file: File) => {
@@ -60,6 +63,8 @@ export default function VisionLabPage() {
         setResponse(null);
         setCurrentStage(0);
         setCompletedStages(new Set());
+        setCorrectAnswers(0);
+        setTotalQuestions(0);
 
         const formData = new FormData();
         formData.append("file", file);
@@ -82,11 +87,43 @@ export default function VisionLabPage() {
         if (file) handleUpload(file);
     };
 
-    const handleAnswerSelect = (index: number, isCorrect: boolean) => {
+    const handleAnswerSelect = async (index: number, isCorrect: boolean) => {
         setSelectedAnswer(index);
         setShowExplanation(true);
+
+        // Update stats
+        const newCorrectAnswers = correctAnswers + (isCorrect ? 1 : 0);
+        const newTotalQuestions = totalQuestions + 1;
+        setCorrectAnswers(newCorrectAnswers);
+        setTotalQuestions(newTotalQuestions);
+
         if (isCorrect) {
             setCompletedStages(prev => new Set([...prev, currentStage]));
+        }
+
+        // Log learning evidence to LET
+        try {
+            const accuracy = newCorrectAnswers / newTotalQuestions;
+            const clarity = accuracy >= 0.7 ? "high" : accuracy >= 0.4 ? "medium" : "low";
+            const stageName = response?.stages[currentStage]?.stage_name || "Unknown stage";
+
+            await letService.logEvidence({
+                type: "vision_mcq",
+                summary: isCorrect
+                    ? `Correctly answered: ${stageName}`
+                    : `Reviewed concept: ${stageName}`,
+                concept_clarity: clarity,
+                observation_accuracy: accuracy,
+                details: JSON.stringify({
+                    stage: currentStage,
+                    question: response?.stages[currentStage]?.mcq.question,
+                    correct: isCorrect,
+                    overall_accuracy: accuracy
+                })
+            });
+        } catch (err) {
+            console.error("Failed to log learning evidence:", err);
+            // Don't block the user experience if logging fails
         }
     };
 

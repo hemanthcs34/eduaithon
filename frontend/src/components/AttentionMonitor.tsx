@@ -9,6 +9,7 @@ interface AttentionMonitorProps {
     onPauseVideo?: () => void;
     onResumeVideo?: () => void;
     isVideoPlaying?: boolean;
+    onStatsUpdate?: (stats: { focusedTime: number; distractedTime: number }) => void;
 }
 
 const BREAK_DURATION_MS = 300000; // 5 minutes
@@ -17,6 +18,7 @@ export default function AttentionMonitor({
     onPauseVideo,
     onResumeVideo,
     isVideoPlaying = false,
+    onStatsUpdate,
 }: AttentionMonitorProps) {
     const {
         isTracking,
@@ -29,6 +31,8 @@ export default function AttentionMonitor({
         dismissBreakSuggestion,
         detectionScore,
         resetStats,
+        totalFocusedTime,
+        totalDistractedTime,
     } = useAttentionTracker();
 
     const [showConsentModal, setShowConsentModal] = useState(false);
@@ -55,6 +59,16 @@ export default function AttentionMonitor({
             onPauseVideo?.();
         }
     }, [distractionEvents, shouldSuggestBreak, onPauseVideo]);
+
+    // Send stats to parent for LET logging
+    useEffect(() => {
+        if (onStatsUpdate && isTracking) {
+            onStatsUpdate({
+                focusedTime: totalFocusedTime,
+                distractedTime: totalDistractedTime
+            });
+        }
+    }, [totalFocusedTime, totalDistractedTime, isTracking, onStatsUpdate]);
 
     // Handle break timer
     useEffect(() => {

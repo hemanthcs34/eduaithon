@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { LogOut, BookOpen, User as UserIcon, Trophy, Rocket, MessageCircleQuestion } from 'lucide-react';
+import { LogOut, BookOpen, User as UserIcon, Trophy, Rocket, MessageCircleQuestion, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
     const navItems = [
         { href: '/student/courses', label: 'My Learning', icon: BookOpen },
+        { href: '/student/let', label: 'Learning Evidence', icon: TrendingUp },
         { href: '/student/doubts', label: 'Community Doubts', icon: MessageCircleQuestion },
         { href: '/student/achievements', label: 'Achievements', icon: Trophy },
     ];

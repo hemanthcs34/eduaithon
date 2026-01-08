@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import AttentionMonitor from '@/components/AttentionMonitor';
+import { letService } from '@/services/let';
 
 interface ControlledVideoPlayerProps {
     videoId: number;
@@ -26,6 +27,12 @@ export default function ControlledVideoPlayer({
     const [isPlaying, setIsPlaying] = useState(false);
     const [loading, setLoading] = useState(true);
     const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // LET tracking - focus and distraction times
+    const sessionStartRef = useRef<number>(Date.now());
+    const totalFocusTimeRef = useRef<number>(0);
+    const totalDistractionTimeRef = useRef<number>(0);
+    const lastActivityRef = useRef<{ isFocused: boolean, timestamp: number }>({ isFocused: true, timestamp: Date.now() });
 
     // Fetch initial progress
     useEffect(() => {
@@ -124,10 +131,72 @@ export default function ControlledVideoPlayer({
         }
     };
 
+    // Log LET evidence for video session
+    const logLETSession = useCallback(async () => {
+        const focusMinutes = totalFocusTimeRef.current / 60000;
+        const distractionMinutes = totalDistractionTimeRef.current / 60000;
+
+        // Only log if there was significant viewing time (at least 30 seconds)
+        if ((focusMinutes + distractionMinutes) < 0.5) return;
+
+        try {
+            await letService.logEvidence({
+                type: "focus_session",
+                summary: `Watched video with ${focusMinutes.toFixed(1)} min focus, ${distractionMinutes.toFixed(1)} min distraction`,
+                focus_minutes: focusMinutes,
+                distraction_minutes: distractionMinutes,
+                details: JSON.stringify({
+                    video_id: videoId,
+                    total_watch_time: (focusMinutes + distractionMinutes).toFixed(2),
+                    session_duration: (Date.now() - sessionStartRef.current) / 60000
+                })
+            });
+        } catch (err) {
+            console.error("Failed to log video LET evidence:", err);
+        }
+    }, [videoId]);
+
+    // Track focus time when video is playing
+    useEffect(() => {
+        if (!isPlaying) return;
+
+        const trackingInterval = setInterval(() => {
+            const now = Date.now();
+            const elapsed = now - lastActivityRef.current.timestamp;
+
+            if (lastActivityRef.current.isFocused) {
+                totalFocusTimeRef.current += elapsed;
+            } else {
+                totalDistractionTimeRef.current += elapsed;
+            }
+
+            lastActivityRef.current.timestamp = now;
+        }, 1000); // Update every second
+
+        return () => clearInterval(trackingInterval);
+    }, [isPlaying]);
+
+    // Log LET on unmount (user navigates away)
+    useEffect(() => {
+        return () => {
+            logLETSession();
+        };
+    }, [logLETSession]);
+
+    // Handle attention stats from AttentionMonitor
+    const handleAttentionStats = useCallback((stats: { focusedTime: number; distractedTime: number }) => {
+        totalFocusTimeRef.current = stats.focusedTime;
+        totalDistractionTimeRef.current = stats.distractedTime;
+    }, []);
+
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     const handleEnded = async () => {
         setIsPlaying(false);
+
+        // Log LET evidence before marking complete
+        await logLETSession();
+
         if (videoRef.current) {
             try {
                 // Force update with full duration to ensure completion
@@ -178,6 +247,7 @@ export default function ControlledVideoPlayer({
                 isVideoPlaying={isPlaying}
                 onPauseVideo={() => videoRef.current?.pause()}
                 onResumeVideo={() => videoRef.current?.play()}
+                onStatsUpdate={handleAttentionStats}
             />
 
             {/* Custom progress overlay showing max watched position */}

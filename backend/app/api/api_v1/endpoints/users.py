@@ -33,6 +33,10 @@ async def create_user(
         full_name=user_in.full_name,
         role=user_in.role,
         is_active=True,
+        # Academic identity (students only)
+        usn=user_in.usn if user_in.role == UserRole.STUDENT else None,
+        academic_year=user_in.academic_year if user_in.role == UserRole.STUDENT else None,
+        branch=user_in.branch if user_in.role == UserRole.STUDENT else None,
     )
     db.add(user)
     await db.commit()
@@ -127,6 +131,9 @@ async def get_pending_enrollments(
             "student_id": e.student_id,
             "student_name": e.student.full_name if e.student else "Unknown",
             "student_email": e.student.email if e.student else "",
+            "student_usn": e.student.usn if e.student else None,
+            "student_academic_year": e.student.academic_year.value if e.student and e.student.academic_year else None,
+            "student_branch": e.student.branch if e.student else None,
             "status": e.status.value,
             "created_at": e.created_at
         })
