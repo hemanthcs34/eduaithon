@@ -167,7 +167,7 @@ export default function CoursePlayerPage() {
                     <div className="space-y-4">
                         <ControlledVideoPlayer
                             videoId={activeVideo.id}
-                            src={`http://localhost:8001/api/v1/videos/${activeVideo.id}/stream`}
+                            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'}/videos/${activeVideo.id}/stream`}
                             onProgressUpdate={handleProgressUpdate}
                             className="w-full"
                             isMandatory={!activeVideo.primary_video_id}

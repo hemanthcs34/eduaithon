@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
 import { doubtService, Doubt, Session } from "@/services/doubt";
 import DoubtList from "@/components/DoubtList";
 import LiveSessionManager from "@/components/LiveSessionManager";
 
 export default function DoubtsPage() {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const [doubts, setDoubts] = useState<Doubt[]>([]);
     const [sessions, setSessions] = useState<Session[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -19,7 +19,7 @@ export default function DoubtsPage() {
     const COURSE_ID = 1;
 
     const refreshData = async () => {
-        if (!token) return;
+        if (!user) return;
         try {
             setIsLoading(true);
             const [fetchedDoubts, fetchedSessions] = await Promise.all([
@@ -37,7 +37,7 @@ export default function DoubtsPage() {
 
     useEffect(() => {
         refreshData();
-    }, [token]);
+    }, [user]);
 
     const handleAskDoubt = async () => {
         if (!newQuestion.trim()) return;

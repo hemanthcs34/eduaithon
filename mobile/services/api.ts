@@ -1,8 +1,8 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Base URL for API - uses your local network IP
-const BASE_URL = 'http://172.22.66.123:8001/api/v1';
+// Base URL for API - Production Render backend
+const BASE_URL = 'https://coursetwin-backend.onrender.com/api/v1';
 
 const api = axios.create({
     baseURL: BASE_URL,

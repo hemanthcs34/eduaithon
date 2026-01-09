@@ -317,7 +317,7 @@ export default function CourseDetailPage() {
                                         <p className="text-xs text-white/40">{material.file_type.toUpperCase()}</p>
                                     </div>
                                     <a
-                                        href={`http://localhost:8001/api/v1/courses/${id}/materials/${material.id}/download`}
+                                        href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'}/courses/${id}/materials/${material.id}/download`}
                                         download
                                         onClick={(e) => e.stopPropagation()}
                                         className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors"
@@ -436,7 +436,7 @@ export default function CourseDetailPage() {
                             <h3 className="font-bold text-white">{previewVideo.title}</h3>
                             <button onClick={() => setPreviewVideo(null)} className="text-white/60 hover:text-white"><X size={24} /></button>
                         </div>
-                        <video src={`http://localhost:8001/api/v1/videos/${previewVideo.id}/stream`} controls autoPlay className="w-full aspect-video" />
+                        <video src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'}/videos/${previewVideo.id}/stream`} controls autoPlay className="w-full aspect-video" />
                     </div>
                 </div>
             )}
