@@ -24,6 +24,21 @@ async def debug_db():
         print(f"Total Users: {user_count}")
         print(f"Total Courses: {course_count}")
         print(f"Total Enrollments: {enrollment_count}")
+        
+        # SEED: If no courses, create one
+        if course_count == 0:
+            print("\n=== SEEDING COURSE ===")
+            # Get teacher ID
+            result = await conn.execute(text("SELECT id FROM users WHERE role = 'teacher' LIMIT 1"))
+            teacher = result.fetchone()
+            if teacher:
+                await conn.execute(text("""
+                    INSERT INTO courses (title, description, teacher_id, created_at)
+                    VALUES ('Computer Vision Fundamentals', 'Deep learning for vision applications', :tid, NOW())
+                """), {"tid": teacher[0]})
+                await conn.commit()
+                print("SUCCESS! Course 'Computer Vision Fundamentals' created!")
+                print("Go to: https://eduaithon.vercel.app/teacher/courses/1")
 
         print("\n=== USERS ===")
         result = await conn.execute(text("SELECT id, email, role, full_name FROM users"))
