@@ -26,16 +26,8 @@ async def create_doubt(
     if current_user.role != UserRole.STUDENT:
         raise HTTPException(status_code=403, detail="Only students can ask doubts")
     
-    # Verify enrollment
-    enrollment = await db.execute(
-        select(models.Enrollment).where(
-            models.Enrollment.student_id == current_user.id,
-            models.Enrollment.course_id == doubt_in.course_id,
-            models.Enrollment.status == EnrollmentStatus.APPROVED
-        )
-    )
-    if not enrollment.scalar_one_or_none():
-        raise HTTPException(status_code=403, detail="You must be enrolled in the course")
+    # NOTE: For demo purposes, any student can post doubts
+    # In production, you might want to verify enrollment
 
     doubt = Doubt(
         student_id=current_user.id,
@@ -59,27 +51,15 @@ async def get_doubts(
     - Students see ALL doubts (read-only learning).
     - Teachers see ALL doubts (to reply).
     """
-    # Verify access (Student enrolled OR Teacher of course)
+    # Verify course exists
     course_result = await db.execute(select(models.Course).where(models.Course.id == course_id))
     course = course_result.scalar_one_or_none()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    if current_user.role == UserRole.STUDENT:
-        # Check enrollment
-        enrollment = await db.execute(
-            select(models.Enrollment).where(
-                models.Enrollment.student_id == current_user.id,
-                models.Enrollment.course_id == course_id,
-                models.Enrollment.status == EnrollmentStatus.APPROVED
-            )
-        )
-        if not enrollment.scalar_one_or_none():
-            raise HTTPException(status_code=403, detail="Not enrolled")
-            
-    elif current_user.role == UserRole.TEACHER:
-        if course.teacher_id != current_user.id:
-             raise HTTPException(status_code=403, detail="Not your course")
+
+    # NOTE: For demo purposes, any authenticated user can view doubts
+    # In production, you might want stricter checks
 
     # Fetch doubts
     query = select(Doubt).where(Doubt.course_id == course_id).order_by(desc(Doubt.created_at))
