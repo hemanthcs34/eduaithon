@@ -31,12 +31,12 @@ async def create_user(
         email=user_in.email,
         hashed_password=security.get_password_hash(user_in.password),
         full_name=user_in.full_name,
-        role=user_in.role,
+        role=UserRole.STUDENT, # Public signup is restricted to Students
         is_active=True,
-        # Academic identity (students only)
-        usn=user_in.usn if user_in.role == UserRole.STUDENT else None,
-        academic_year=user_in.academic_year if user_in.role == UserRole.STUDENT else None,
-        branch=user_in.branch if user_in.role == UserRole.STUDENT else None,
+        # Academic identity (Always required for students)
+        usn=user_in.usn,
+        academic_year=user_in.academic_year,
+        branch=user_in.branch,
     )
     db.add(user)
     await db.commit()

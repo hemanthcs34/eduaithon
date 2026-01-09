@@ -152,3 +152,46 @@ Return ONLY valid JSON in this exact format:
         return {"error": f"AI service error: {str(e)}"}
     
     return {"error": "Failed to generate quiz"}
+
+async def generate_chat_with_groq(
+    messages: list[dict],
+    model: str = GROQ_MODEL
+) -> str:
+    """
+    Generate chat response using Groq API.
+    Used as fallback for the AI Tutor.
+    """
+    api_key = get_groq_api_key()
+    if not api_key:
+        logger.error("GROQ_API_KEY not set for chat fallback")
+        return "I'm having trouble connecting to my brain right now. Please check the server configuration."
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                GROQ_API_URL,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": 1024
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    return content
+                return "Received empty response from backup AI."
+            else:
+                logger.error(f"Groq Chat error: {response.status_code} - {response.text[:200]}")
+                return "I'm currently offline (Backup AI failed)."
+                
+    except Exception as e:
+        logger.error(f"Groq Chat exception: {e}")
+        return "I'm currently offline (Connection error)."

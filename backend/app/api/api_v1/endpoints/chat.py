@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app import models
 from app.api import deps
-from app.core.ollama import generate_response
+from app.core.ai_router import generate_chat_response
 
 router = APIRouter()
 
@@ -34,7 +34,7 @@ async def chat(
     history = [{"role": msg.role, "content": msg.content} for msg in request.history]
     
     # Generate response
-    response_text = await generate_response(
+    response_text = await generate_chat_response(
         course_id=request.course_id,
         user_message=request.message,
         chat_history=history

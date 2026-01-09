@@ -5,8 +5,7 @@ from sqlalchemy import select, and_
 from pydantic import BaseModel
 from app import models
 from app.api import deps
-from app.core.ollama import generate_quiz_from_content
-from app.core.rag import query_materials
+from app.core.ai_router import generate_quiz
 
 router = APIRouter()
 
@@ -149,7 +148,7 @@ async def generate_quiz(
             pdf_content += f"=== {mat.title} ===\n{mat.content_text}\n\n"
     
     # Generate quiz using video descriptions + PDF content
-    quiz_data = await generate_quiz_from_content(
+    quiz_data = await generate_quiz(
         video_descriptions=video_descriptions,
         pdf_content=pdf_content,
         num_questions=10

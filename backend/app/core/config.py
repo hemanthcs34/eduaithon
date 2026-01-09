@@ -16,18 +16,26 @@ class Settings(BaseSettings):
             return v
         return ["http://localhost:3000"]
 
-    # Database
-    # Using SQLite for local development as requested
+    # Database - Reads from DATABASE_URL environment variable
+    # Defaults to SQLite for local development, use PostgreSQL in production (Render)
     DATABASE_URL: str = "sqlite+aiosqlite:///./coursetwin.db"
 
+    @field_validator("DATABASE_URL", mode="after")
+    @classmethod
+    def ensure_async_driver(cls, v: str) -> str:
+        # Convert postgresql:// to postgresql+asyncpg:// for async support
+        if v.startswith("postgresql://") and "+asyncpg" not in v:
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
     # JWT
-    SECRET_KEY: str = "changethis" # TODO: Change in production
+    SECRET_KEY: str = "changethis"  # TODO: Change in production
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # AI Services
     GROQ_API_KEY: str = ""  # Optional: For quiz generation fallback
 
-    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env")
+    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 
 settings = Settings()

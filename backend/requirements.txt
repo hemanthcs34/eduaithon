@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 aiosqlite
+asyncpg
 chromadb
 python-multipart
 httpx

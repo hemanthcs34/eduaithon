@@ -130,25 +130,13 @@ export default function LoginPage() {
 
                         {!isLogin && (
                             <>
-                                <div className="flex gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setRole('student')}
-                                        className={`flex-1 py-2 rounded-xl border transition-all ${role === 'student' ? 'bg-primary border-primary text-white' : 'border-white/10 text-white/40 hover:bg-white/5'}`}
-                                    >
-                                        Student
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setRole('teacher')}
-                                        className={`flex-1 py-2 rounded-xl border transition-all ${role === 'teacher' ? 'bg-secondary border-secondary text-white' : 'border-white/10 text-white/40 hover:bg-white/5'}`}
-                                    >
-                                        Teacher
-                                    </button>
+                                {/* Role selection disabled - Student Only */}
+                                <div className="hidden">
+                                    {/* Implicit Role: Student */}
                                 </div>
 
-                                {/* Academic Fields - STUDENTS ONLY */}
-                                {role === 'student' && (
+                                {/* Academic Fields - Required for Student Registration */}
+                                {true && (
                                     <>
                                         <GlassInput
                                             placeholder="USN (e.g., 1MS21CS001)"
