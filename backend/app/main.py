@@ -15,15 +15,23 @@ async def startup_event():
         await conn.run_sync(Base.metadata.create_all)
 
 
-# Set all CORS enabled origins
-if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+# CORS Configuration - Always enabled with hardcoded production origins as fallback
+# This ensures deployment works even if BACKEND_CORS_ORIGINS is not set correctly
+PRODUCTION_ORIGINS = [
+    "https://eduaithon.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:8001",
+]
+# Merge environment-specified origins with hardcoded production origins
+cors_origins = list(set(settings.BACKEND_CORS_ORIGINS + PRODUCTION_ORIGINS))
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
