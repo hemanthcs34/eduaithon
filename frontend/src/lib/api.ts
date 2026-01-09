@@ -1,6 +1,19 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1';
+// Smart API URL: Automatically detects production vs development
+export const getApiUrl = () => {
+  // Check if running in browser (client-side)
+  if (typeof window !== 'undefined') {
+    // If on Vercel production domain, use Render backend
+    if (window.location.hostname.includes('vercel.app')) {
+      return 'https://coursetwin-backend.onrender.com/api/v1';
+    }
+  }
+  // Default to localhost for local development
+  return 'http://localhost:8001/api/v1';
+};
+
+const API_URL = getApiUrl();
 
 const api = axios.create({
   baseURL: API_URL,

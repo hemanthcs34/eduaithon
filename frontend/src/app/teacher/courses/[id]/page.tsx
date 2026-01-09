@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import api from '@/lib/api';
+import api, { getApiUrl } from '@/lib/api';
 import { GlassCard, GlassInput, GlassButton } from '@/components/ui/glass';
-import { Upload, PlayCircle, Loader2, X, FileText, Trash2, Brain } from 'lucide-react';
+import { Loader2, Plus, Upload, Trash2, FileText, PlayCircle, X, Video, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -323,7 +323,7 @@ export default function CourseDetailPage() {
                                         <p className="text-xs text-white/40">{material.file_type.toUpperCase()}</p>
                                     </div>
                                     <a
-                                        href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'}/courses/${id}/materials/${material.id}/download`}
+                                        href={`${getApiUrl()}/courses/${id}/materials/${material.id}/download`}
                                         download
                                         onClick={(e) => e.stopPropagation()}
                                         className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors"
@@ -442,7 +442,7 @@ export default function CourseDetailPage() {
                             <h3 className="font-bold text-white">{previewVideo.title}</h3>
                             <button onClick={() => setPreviewVideo(null)} className="text-white/60 hover:text-white"><X size={24} /></button>
                         </div>
-                        <video src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'}/videos/${previewVideo.id}/stream`} controls autoPlay className="w-full aspect-video" />
+                        <video src={`${getApiUrl()}/videos/${previewVideo.id}/stream`} controls autoPlay className="w-full aspect-video" />
                     </div>
                 </div>
             )}

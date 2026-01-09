@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import api, { getApiUrl } from '@/lib/api';
 import { useParams } from 'next/navigation';
 import ControlledVideoPlayer from '@/components/ControlledVideoPlayer';
 import AIChatbot from '@/components/AIChatbot';
@@ -167,7 +167,7 @@ export default function CoursePlayerPage() {
                     <div className="space-y-4">
                         <ControlledVideoPlayer
                             videoId={activeVideo.id}
-                            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api/v1'}/videos/${activeVideo.id}/stream`}
+                            src={`${getApiUrl()}/videos/${activeVideo.id}/stream`}
                             onProgressUpdate={handleProgressUpdate}
                             className="w-full"
                             isMandatory={!activeVideo.primary_video_id}
