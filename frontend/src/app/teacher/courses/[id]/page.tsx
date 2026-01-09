@@ -88,7 +88,10 @@ export default function CourseDetailPage() {
 
     const handleUploadVideo = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!fileInputRef.current?.files?.[0]) return;
+        if (!fileInputRef.current?.files?.[0]) {
+            alert("Please select a video file");
+            return;
+        }
 
         setLoading(true);
         try {
@@ -156,7 +159,10 @@ export default function CourseDetailPage() {
 
     const handleUploadMaterial = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!materialInputRef.current?.files?.[0]) return;
+        if (!materialInputRef.current?.files?.[0]) {
+            alert("Please select a material file");
+            return;
+        }
 
         setUploadingMaterial(true);
         try {
@@ -372,7 +378,7 @@ export default function CourseDetailPage() {
                                         className="border-2 border-dashed border-primary/30 bg-primary/5 rounded-xl p-6 text-center hover:bg-primary/10 transition-colors cursor-pointer"
                                         onClick={() => fileInputRef.current?.click()}
                                     >
-                                        <input type="file" ref={fileInputRef} className="hidden" accept="video/*" onChange={handleFileSelect} required />
+                                        <input type="file" ref={fileInputRef} className="hidden" accept="video/*" onChange={handleFileSelect} />
                                         <Upload className="mx-auto h-6 w-6 text-primary mb-2" />
                                         <p className="text-sm font-medium text-white">{selectedFileName || 'Select Primary Video'}</p>
                                         <p className="text-xs text-white/40 mt-1">Required</p>
@@ -416,7 +422,7 @@ export default function CourseDetailPage() {
                                 className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:bg-white/5 transition-colors cursor-pointer"
                                 onClick={() => materialInputRef.current?.click()}
                             >
-                                <input type="file" ref={materialInputRef} className="hidden" accept=".pdf,.txt,.md" onChange={handleMaterialSelect} required />
+                                <input type="file" ref={materialInputRef} className="hidden" accept=".pdf,.txt,.md" onChange={handleMaterialSelect} />
                                 <FileText className="mx-auto h-6 w-6 text-white/40 mb-2" />
                                 <p className="text-sm text-white/60">{selectedMaterialName || 'Select PDF/TXT/MD'}</p>
                             </div>
