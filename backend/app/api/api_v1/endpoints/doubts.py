@@ -8,6 +8,7 @@ from app.models.user import UserRole
 from app.schemas.doubt import DoubtCreate, DoubtResponse, DoubtUpdate, SessionCreate, SessionResponse
 from app.models.doubt import Doubt, DoubtSession, DoubtStatus
 from datetime import datetime, timedelta
+from app.models.course import EnrollmentStatus
 
 router = APIRouter()
 
@@ -30,7 +31,7 @@ async def create_doubt(
         select(models.Enrollment).where(
             models.Enrollment.student_id == current_user.id,
             models.Enrollment.course_id == doubt_in.course_id,
-            models.Enrollment.status == "approved" # Assuming 'approved' string or enum
+            models.Enrollment.status == EnrollmentStatus.APPROVED
         )
     )
     if not enrollment.scalar_one_or_none():
@@ -70,7 +71,7 @@ async def get_doubts(
             select(models.Enrollment).where(
                 models.Enrollment.student_id == current_user.id,
                 models.Enrollment.course_id == course_id,
-                models.Enrollment.status == "approved"
+                models.Enrollment.status == EnrollmentStatus.APPROVED
             )
         )
         if not enrollment.scalar_one_or_none():
