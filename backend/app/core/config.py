@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # AI Services
     GROQ_API_KEY: str = ""  # Optional: For quiz generation fallback
 
+    # MCP AutoPilot Monitoring
+    MCP_API_KEY: str = ""  # Required for MCP endpoints authentication
+
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 
 settings = Settings()
