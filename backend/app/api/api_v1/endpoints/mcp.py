@@ -123,6 +123,40 @@ async def scale_service(
         )
 
 
+@router.get("/scale", response_model=mcp_schemas.ScaleResponse)
+async def get_scale_status(
+    _: None = Depends(verify_mcp_api_key)
+) -> Any:
+    """
+    Get current scaling status.
+    Specific for supporting HEAD requests from Control Plane health checks.
+    """
+    try:
+        current_replicas = SIMULATION_STATE["replicas"]
+        
+        # Calculate projected health status (same logic)
+        projected_cpu_load = SIMULATION_STATE["base_load"] / current_replicas
+        
+        status = "HEALTHY"
+        if projected_cpu_load > 80:
+            status = "CRITICAL"
+        elif projected_cpu_load > 60:
+            status = "DEGRADED"
+            
+        return mcp_schemas.ScaleResponse(
+            success=True,
+            message=f"Current scaling status: {current_replicas} replicas",
+            replicas=current_replicas,
+            status=status
+        )
+    except Exception as e:
+        logger.error(f"Error getting scale status: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get scale status: {str(e)}"
+        )
+
+
 @router.post("/rollback", response_model=mcp_schemas.RollbackResponse)
 async def rollback_service(
     _: None = Depends(verify_mcp_api_key)
