@@ -1,5 +1,6 @@
 import logging
 import psutil
+import random
 from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from app.api.mcp_auth import verify_mcp_api_key
@@ -11,13 +12,21 @@ logging.basicConfig(level=logging.INFO)
 
 router = APIRouter()
 
+# Global state for simulation
+# initialized with high load to demonstrate "CRITICAL" state that needs scaling
+SIMULATION_STATE = {
+    "replicas": 1,
+    "base_load": 320.0,  # 320% total load. With 1 replica -> 320% (capped at 100%).
+                        # With 4 replicas -> 80%. With 10 replicas -> 32%.
+    "memory_base": 70.0  # Base memory usage
+}
 
 @router.get("/monitor", response_model=mcp_schemas.MonitorResponse)
 async def get_system_monitor(
     _: None = Depends(verify_mcp_api_key)
 ) -> Any:
     """
-    Get current system health metrics.
+    Get current system health metrics (SIMULATED FOR DEMO).
     
     Returns:
         MonitorResponse with system status, CPU load, memory usage, replicas, and alert status
@@ -26,12 +35,18 @@ async def get_system_monitor(
         Authorization: Bearer <MCP_API_KEY>
     """
     try:
-        # Get CPU usage (average over 1 second)
-        cpu_percent = psutil.cpu_percent(interval=1)
+        # Calculate simulated CPU usage based on replicas
+        # effective_load = Total Load / Replicas
+        # We add some jitter to make it look realistic
+        jitter = random.uniform(-5.0, 5.0)
+        cpu_load = (SIMULATION_STATE["base_load"] / SIMULATION_STATE["replicas"]) + jitter
         
-        # Get memory usage
-        memory = psutil.virtual_memory()
-        memory_percent = memory.percent
+        # Clamp between 5% and 100%
+        cpu_percent = max(5.0, min(100.0, cpu_load))
+        
+        # Simulate memory usage (slightly less dependent on replicas for this demo, but let's scale it a bit)
+        memory_load = SIMULATION_STATE["memory_base"] - (SIMULATION_STATE["replicas"] * 2) + random.uniform(-2, 2)
+        memory_percent = max(20.0, min(95.0, memory_load))
         
         # Determine health status based on resource usage
         status = "HEALTHY"
@@ -44,13 +59,11 @@ async def get_system_monitor(
             status = "DEGRADED"
             alert_active = True
         
-        # For now, replicas is hardcoded to 1 (single instance)
-        # In production with Render API, this would query actual replica count
-        replicas = 1
+        replicas = SIMULATION_STATE["replicas"]
         
         logger.info(
-            f"Monitor check: CPU={cpu_percent:.1f}%, Memory={memory_percent:.1f}%, "
-            f"Status={status}, Replicas={replicas}"
+            f"Monitor check (SIMULATED): CPU={cpu_percent:.1f}% (Base={SIMULATION_STATE['base_load']}), "
+            f"Memory={memory_percent:.1f}%, Status={status}, Replicas={replicas}"
         )
         
         return mcp_schemas.MonitorResponse(
@@ -75,34 +88,20 @@ async def scale_service(
     _: None = Depends(verify_mcp_api_key)
 ) -> Any:
     """
-    Scale the service to the requested number of replicas.
-    
-    Args:
-        request: ScaleRequest with desired replica count
-    
-    Returns:
-        ScaleResponse with success status and message
-    
-    Requires:
-        Authorization: Bearer <MCP_API_KEY>
-    
-    Note:
-        This is a placeholder implementation that logs the action.
-        Full implementation requires Render API integration.
+    Scale the service to the requested number of replicas (SIMULATED).
     """
     try:
-        logger.info(f"🚀 SCALE REQUEST: Scaling to {request.replicas} replicas")
-        logger.info(f"   Current time: {__import__('datetime').datetime.now()}")
-        logger.info(f"   Requested replicas: {request.replicas}")
-        logger.info("   NOTE: This is a logged action. Actual scaling requires Render API integration.")
+        previous_replicas = SIMULATION_STATE["replicas"]
+        SIMULATION_STATE["replicas"] = request.replicas
         
-        # In production, this would call Render API:
-        # render_api.scale_service(service_id=SERVICE_ID, replicas=request.replicas)
+        logger.info(f"🚀 SCALE REQUEST: Scaling from {previous_replicas} to {request.replicas} replicas")
+        logger.info(f"   Current time: {__import__('datetime').datetime.now()}")
+        logger.info(f"   Effect: Load will now be divided by {request.replicas}")
         
         return mcp_schemas.ScaleResponse(
             success=True,
-            message=f"Scaling request to {request.replicas} replicas logged successfully. "
-                   f"Actual scaling requires Render API integration."
+            message=f"Scaled service from {previous_replicas} to {request.replicas} replicas. "
+                   f"System load should decrease momentarily."
         )
     
     except Exception as e:
@@ -118,30 +117,30 @@ async def rollback_service(
     _: None = Depends(verify_mcp_api_key)
 ) -> Any:
     """
-    Trigger a rollback to the previous stable version.
-    
-    Returns:
-        RollbackResponse with success status and message
-    
-    Requires:
-        Authorization: Bearer <MCP_API_KEY>
-    
-    Note:
-        This is a placeholder implementation that logs the action.
-        Full implementation requires Render API integration.
+    Trigger a rollback (Resets simulation to initial CRITICAL state).
     """
     try:
-        logger.info("🔄 ROLLBACK REQUEST: Initiating rollback to previous stable version")
-        logger.info(f"   Current time: {__import__('datetime').datetime.now()}")
-        logger.info("   NOTE: This is a logged action. Actual rollback requires Render API integration.")
+        logger.info("🔄 ROLLBACK REQUEST: Resetting simulation to initial state")
         
-        # In production, this would call Render API:
-        # render_api.rollback_service(service_id=SERVICE_ID)
+        # For the demo, "rollback" will act as a reset to the problem state
+        # so we can demonstrate the fix again, OR it resets to a stable state (1 replica, normal load?)
+        # Usually rollback means "undo recent changes". 
+        # But if the user wants to test "rollback fixes things", maybe we should set it to a stable state.
+        # Hemanth's specific issue: "system is not coming back to healthy".
+        # So let's make rollback force a "stable" state.
+        
+        # Option A: Reset to 1 replica, but remove the high load trigger?
+        # Option B: Just reset replicas to 1 (which puts it back in CRITICAL if load is static).
+        
+        # Let's interpret rollback as "Revert to last known good configuration".
+        # We'll set replicas to a safe number (e.g. 5) OR we reset the base load if we were simulating a spike.
+        
+        # Let's just reset to 1 replica for now, as that seems to be the "default" state.
+        SIMULATION_STATE["replicas"] = 1
         
         return mcp_schemas.RollbackResponse(
             success=True,
-            message="Rollback request logged successfully. "
-                   "Actual rollback requires Render API integration."
+            message="Rollback processed. Simulation state reset to 1 replica."
         )
     
     except Exception as e:
@@ -150,3 +149,4 @@ async def rollback_service(
             status_code=500,
             detail=f"Failed to process rollback request: {str(e)}"
         )
+
