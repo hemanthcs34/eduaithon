@@ -45,6 +45,11 @@ class ScaleResponse(BaseModel):
     """Response model for POST /api/v1/scale endpoint"""
     success: bool = Field(..., description="Whether the scaling request was successful")
     message: str = Field(..., description="Status message")
+    replicas: int = Field(..., description="Current number of replicas after scaling")
+    status: Literal["HEALTHY", "DEGRADED", "CRITICAL"] = Field(
+        ..., 
+        description="Current system health status"
+    )
 
 
 class RollbackResponse(BaseModel):

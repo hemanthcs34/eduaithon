@@ -98,10 +98,21 @@ async def scale_service(
         logger.info(f"   Current time: {__import__('datetime').datetime.now()}")
         logger.info(f"   Effect: Load will now be divided by {request.replicas}")
         
+        # Calculate projected health status
+        # We use the same logic as monitor to predict what the status will be
+        projected_cpu_load = SIMULATION_STATE["base_load"] / request.replicas
+        
+        new_status = "HEALTHY"
+        if projected_cpu_load > 80:
+            new_status = "CRITICAL"
+        elif projected_cpu_load > 60:
+            new_status = "DEGRADED"
+            
         return mcp_schemas.ScaleResponse(
             success=True,
-            message=f"Scaled service from {previous_replicas} to {request.replicas} replicas. "
-                   f"System load should decrease momentarily."
+            message=f"Successfully scaled to {request.replicas} replicas",
+            replicas=request.replicas,
+            status=new_status
         )
     
     except Exception as e:
